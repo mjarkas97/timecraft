@@ -1,8 +1,10 @@
 <script lang="ts">
   import { entriesStore } from '../stores/entries.svelte'
+  import { projectsStore } from '../stores/projects.svelte'
   import { formatClock } from '../lib/time'
 
   let now = $state(Date.now())
+  let selectedProject = $state('')
 
   $effect(() => {
     if (!entriesStore.active) return
@@ -11,20 +13,33 @@
   })
 
   const elapsedMs = $derived(entriesStore.active ? now - entriesStore.active.start : 0)
+  const activeProject = $derived(projectsStore.get(entriesStore.active?.project ?? null))
 
   function toggle() {
     if (entriesStore.active) {
       entriesStore.clockOut()
     } else {
-      entriesStore.clockIn()
+      entriesStore.clockIn(selectedProject || null)
     }
   }
 </script>
+
+{#if !entriesStore.active && projectsStore.projects.length > 0}
+  <select class="project-select" bind:value={selectedProject}>
+    <option value="">No project</option>
+    {#each projectsStore.projects as project (project.id)}
+      <option value={project.id}>{project.name}</option>
+    {/each}
+  </select>
+{/if}
 
 <button class="clock-button" class:active={!!entriesStore.active} onclick={toggle}>
   {#if entriesStore.active}
     <span class="label">Clock Out</span>
     <span class="elapsed">{formatClock(elapsedMs)}</span>
+    {#if activeProject}
+      <span class="project">{activeProject.name}</span>
+    {/if}
   {:else}
     <span class="label">Clock In</span>
   {/if}
@@ -32,6 +47,17 @@
 
 <style lang="scss">
   @use '../styles/variables' as *;
+
+  .project-select {
+    display: block;
+    margin: 0 auto;
+    font: inherit;
+    color: $color-text;
+    background: $color-surface;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $spacing-xs $spacing-sm;
+  }
 
   .clock-button {
     width: 200px;
@@ -66,6 +92,11 @@
       font-variant-numeric: tabular-nums;
       font-size: 1rem;
       opacity: 0.9;
+    }
+
+    .project {
+      font-size: 0.8rem;
+      opacity: 0.85;
     }
   }
 </style>

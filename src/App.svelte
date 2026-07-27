@@ -2,6 +2,7 @@
   import ClockButton from './components/ClockButton.svelte'
   import TotalsBar from './components/TotalsBar.svelte'
   import EntryList from './components/EntryList.svelte'
+  import ProjectManager from './components/ProjectManager.svelte'
 </script>
 
 <main>
@@ -12,6 +13,7 @@
   <ClockButton />
   <TotalsBar />
   <EntryList />
+  <ProjectManager />
 </main>
 
 <style lang="scss">

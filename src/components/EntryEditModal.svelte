@@ -1,5 +1,6 @@
 <script lang="ts">
   import { entriesStore } from '../stores/entries.svelte'
+  import { projectsStore } from '../stores/projects.svelte'
   import { toTimeInputValue, withTimeOfDay } from '../lib/time'
   import type { TimeEntry } from '../types'
 
@@ -7,11 +8,12 @@
 
   let startValue = $state(toTimeInputValue(entry.start))
   let endValue = $state(entry.end !== null ? toTimeInputValue(entry.end) : '')
+  let projectValue = $state(entry.project ?? '')
 
   function save() {
     const start = withTimeOfDay(entry.start, startValue)
     const end = entry.end === null ? null : withTimeOfDay(entry.end, endValue)
-    entriesStore.updateEntry(entry.id, { start, end })
+    entriesStore.updateEntry(entry.id, { start, end, project: projectValue || null })
     onClose()
   }
 
@@ -50,6 +52,16 @@
     {:else}
       <p class="hint">Still clocked in — clock out first to set an end time.</p>
     {/if}
+
+    <label>
+      Project
+      <select bind:value={projectValue}>
+        <option value="">No project</option>
+        {#each projectsStore.projects as project (project.id)}
+          <option value={project.id}>{project.name}</option>
+        {/each}
+      </select>
+    </label>
 
     <div class="actions">
       <button class="delete" onclick={remove}>Delete</button>
@@ -95,7 +107,8 @@
       font-size: 0.85rem;
       color: $color-text-muted;
 
-      input {
+      input,
+      select {
         font: inherit;
         color: $color-text;
         background: $color-surface-alt;

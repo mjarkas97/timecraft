@@ -33,22 +33,26 @@ class EntriesStore {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.entries))
   }
 
-  clockIn() {
+  clockIn(project: string | null = null) {
     if (this.active) return
-    this.entries.push({ id: crypto.randomUUID(), start: Date.now(), end: null })
+    const now = Date.now()
+    this.entries.push({ id: crypto.randomUUID(), start: now, end: null, project, timecreated: now, timemodified: now })
     this.save()
   }
 
   clockOut() {
-    if (!this.active) return
-    this.active.end = Date.now()
+    const active = this.active
+    if (!active) return
+    const now = Date.now()
+    active.end = now
+    active.timemodified = now
     this.save()
   }
 
-  updateEntry(id: string, patch: Partial<Pick<TimeEntry, 'start' | 'end'>>) {
+  updateEntry(id: string, patch: Partial<Pick<TimeEntry, 'start' | 'end' | 'project'>>) {
     const entry = this.entries.find((e) => e.id === id)
     if (!entry) return
-    Object.assign(entry, patch)
+    Object.assign(entry, patch, { timemodified: Date.now() })
     this.save()
   }
 
@@ -56,6 +60,17 @@ class EntriesStore {
     const index = this.entries.findIndex((e) => e.id === id)
     if (index === -1) return
     this.entries.splice(index, 1)
+    this.save()
+  }
+
+  clearProject(projectId: string) {
+    const now = Date.now()
+    for (const entry of this.entries) {
+      if (entry.project === projectId) {
+        entry.project = null
+        entry.timemodified = now
+      }
+    }
     this.save()
   }
 }

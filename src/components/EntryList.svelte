@@ -1,5 +1,6 @@
 <script lang="ts">
   import { entriesStore } from '../stores/entries.svelte'
+  import { projectsStore } from '../stores/projects.svelte'
   import { entryDurationMs, formatHoursMinutes, formatTimeOfDay } from '../lib/time'
   import type { TimeEntry } from '../types'
   import EntryEditModal from './EntryEditModal.svelte'
@@ -23,8 +24,13 @@
       {#each entries as entry (entry.id)}
         <li>
           <button class="entry-row" onclick={() => (editingEntry = entry)}>
-            <span class="range">
-              {formatTimeOfDay(entry.start)} – {entry.end ? formatTimeOfDay(entry.end) : 'now'}
+            <span class="left">
+              {#if projectsStore.get(entry.project)}
+                <span class="project-dot" style:background={projectsStore.get(entry.project)?.color}></span>
+              {/if}
+              <span class="range">
+                {formatTimeOfDay(entry.start)} – {entry.end ? formatTimeOfDay(entry.end) : 'now'}
+              </span>
             </span>
             <span class="duration">{formatHoursMinutes(entryDurationMs(entry, Date.now()))}</span>
           </button>
@@ -88,6 +94,19 @@
     padding: $spacing-sm $spacing-md;
     background: $color-surface;
     border-radius: $radius-md;
+
+    .left {
+      display: flex;
+      align-items: center;
+      gap: $spacing-xs;
+    }
+
+    .project-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: $radius-full;
+      flex-shrink: 0;
+    }
 
     .range {
       color: $color-text;
