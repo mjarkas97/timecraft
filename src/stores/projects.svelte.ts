@@ -1,52 +1,30 @@
 import type { Project } from '../types'
+import { api } from '../lib/api'
 import { entriesStore } from './entries.svelte'
 
-const STORAGE_KEY = 'timecraft:projects'
-
-const DEFAULT_COLORS = ['#5b8cff', '#ff6b5b', '#5bd6a3', '#f0b94d', '#c07bff', '#4dd0e1']
-
-function load(): Project[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as Project[]) : []
-  } catch {
-    return []
-  }
-}
-
 class ProjectsStore {
-  projects = $state<Project[]>(load())
+  projects = $state<Project[]>([])
 
-  private save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.projects))
+  async load() {
+    this.projects = await api.get<Project[]>('/projects')
   }
 
-  create(name: string, color?: string): Project {
-    const now = Date.now()
-    const project: Project = {
-      id: crypto.randomUUID(),
-      name,
-      color: color ?? DEFAULT_COLORS[this.projects.length % DEFAULT_COLORS.length],
-      timecreated: now,
-      timemodified: now,
-    }
+  async create(name: string, color?: string): Promise<Project> {
+    const project = await api.post<Project>('/projects', { name, color })
     this.projects.push(project)
-    this.save()
     return project
   }
 
-  update(id: string, patch: Partial<Pick<Project, 'name' | 'color'>>) {
-    const project = this.projects.find((p) => p.id === id)
-    if (!project) return
-    Object.assign(project, patch, { timemodified: Date.now() })
-    this.save()
+  async update(id: string, patch: Partial<Pick<Project, 'name' | 'color'>>) {
+    const project = await api.patch<Project>(`/projects/${id}`, patch)
+    const index = this.projects.findIndex((p) => p.id === id)
+    if (index !== -1) this.projects[index] = project
   }
 
-  delete(id: string) {
+  async delete(id: string) {
+    await api.delete(`/projects/${id}`)
     const index = this.projects.findIndex((p) => p.id === id)
-    if (index === -1) return
-    this.projects.splice(index, 1)
-    this.save()
+    if (index !== -1) this.projects.splice(index, 1)
     entriesStore.clearProject(id)
   }
 

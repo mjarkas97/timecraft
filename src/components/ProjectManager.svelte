@@ -3,16 +3,43 @@
 
   let newName = $state('')
 
-  function add() {
+  async function add() {
     const name = newName.trim()
     if (!name) return
-    projectsStore.create(name)
-    newName = ''
+    try {
+      await projectsStore.create(name)
+      newName = ''
+    } catch (err) {
+      console.error(err)
+      alert((err as Error).message)
+    }
   }
 
-  function remove(id: string) {
-    if (confirm('Delete this project? Its entries stay, just become uncategorized.')) {
-      projectsStore.delete(id)
+  async function remove(id: string) {
+    if (!confirm('Delete this project? Its entries stay, just become uncategorized.')) return
+    try {
+      await projectsStore.delete(id)
+    } catch (err) {
+      console.error(err)
+      alert((err as Error).message)
+    }
+  }
+
+  async function updateColor(id: string, color: string) {
+    try {
+      await projectsStore.update(id, { color })
+    } catch (err) {
+      console.error(err)
+      alert((err as Error).message)
+    }
+  }
+
+  async function updateName(id: string, name: string) {
+    try {
+      await projectsStore.update(id, { name })
+    } catch (err) {
+      console.error(err)
+      alert((err as Error).message)
     }
   }
 </script>
@@ -27,12 +54,12 @@
           <input
             type="color"
             value={project.color}
-            onchange={(event) => projectsStore.update(project.id, { color: event.currentTarget.value })}
+            onchange={(event) => updateColor(project.id, event.currentTarget.value)}
           />
           <input
             type="text"
             value={project.name}
-            onchange={(event) => projectsStore.update(project.id, { name: event.currentTarget.value })}
+            onchange={(event) => updateName(project.id, event.currentTarget.value)}
           />
           <button class="delete" onclick={() => remove(project.id)}>Delete</button>
         </li>

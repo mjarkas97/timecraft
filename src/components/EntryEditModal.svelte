@@ -10,17 +10,26 @@
   let endValue = $state(entry.end !== null ? toTimeInputValue(entry.end) : '')
   let projectValue = $state(entry.project ?? '')
 
-  function save() {
+  async function save() {
     const start = withTimeOfDay(entry.start, startValue)
     const end = entry.end === null ? null : withTimeOfDay(entry.end, endValue)
-    entriesStore.updateEntry(entry.id, { start, end, project: projectValue || null })
-    onClose()
+    try {
+      await entriesStore.updateEntry(entry.id, { start, end, project: projectValue || null })
+      onClose()
+    } catch (err) {
+      console.error(err)
+      alert((err as Error).message)
+    }
   }
 
-  function remove() {
-    if (confirm('Delete this entry?')) {
-      entriesStore.deleteEntry(entry.id)
+  async function remove() {
+    if (!confirm('Delete this entry?')) return
+    try {
+      await entriesStore.deleteEntry(entry.id)
       onClose()
+    } catch (err) {
+      console.error(err)
+      alert((err as Error).message)
     }
   }
 </script>

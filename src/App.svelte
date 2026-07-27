@@ -3,6 +3,15 @@
   import TotalsBar from './components/TotalsBar.svelte'
   import EntryList from './components/EntryList.svelte'
   import ProjectManager from './components/ProjectManager.svelte'
+  import { entriesStore } from './stores/entries.svelte'
+  import { projectsStore } from './stores/projects.svelte'
+
+  $effect(() => {
+    Promise.all([entriesStore.load(), projectsStore.load()]).catch((err) => {
+      console.error(err)
+      alert(`Failed to load data: ${(err as Error).message}`)
+    })
+  })
 </script>
 
 <main>

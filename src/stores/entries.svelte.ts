@@ -1,21 +1,12 @@
 import type { TimeEntry } from '../types'
 import { entriesInRange, startOfDay, startOfWeek } from '../lib/time'
+import { api } from '../lib/api'
 
-const STORAGE_KEY = 'timecraft:entries'
 const DAY_MS = 24 * 60 * 60 * 1000
 const WEEK_MS = 7 * DAY_MS
 
-function load(): TimeEntry[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as TimeEntry[]) : []
-  } catch {
-    return []
-  }
-}
-
 class EntriesStore {
-  entries = $state<TimeEntry[]>(load())
+  entries = $state<TimeEntry[]>([])
 
   active = $derived(this.entries.find((entry) => entry.end === null) ?? null)
 
@@ -29,49 +20,41 @@ class EntriesStore {
     return entriesInRange(this.entries, start, start + WEEK_MS)
   })
 
-  private save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.entries))
+  async load() {
+    this.entries = await api.get<TimeEntry[]>('/entries')
   }
 
-  clockIn(project: string | null = null) {
+  async clockIn(project: string | null = null) {
     if (this.active) return
-    const now = Date.now()
-    this.entries.push({ id: crypto.randomUUID(), start: now, end: null, project, timecreated: now, timemodified: now })
-    this.save()
+    const entry = await api.post<TimeEntry>('/entries/clock-in', { project })
+    this.entries.push(entry)
   }
 
-  clockOut() {
-    const active = this.active
-    if (!active) return
-    const now = Date.now()
-    active.end = now
-    active.timemodified = now
-    this.save()
+  async clockOut() {
+    if (!this.active) return
+    const entry = await api.post<TimeEntry>('/entries/clock-out')
+    const index = this.entries.findIndex((e) => e.id === entry.id)
+    if (index !== -1) this.entries[index] = entry
   }
 
-  updateEntry(id: string, patch: Partial<Pick<TimeEntry, 'start' | 'end' | 'project'>>) {
-    const entry = this.entries.find((e) => e.id === id)
-    if (!entry) return
-    Object.assign(entry, patch, { timemodified: Date.now() })
-    this.save()
-  }
-
-  deleteEntry(id: string) {
+  async updateEntry(id: string, patch: Partial<Pick<TimeEntry, 'start' | 'end' | 'project'>>) {
+    const entry = await api.patch<TimeEntry>(`/entries/${id}`, patch)
     const index = this.entries.findIndex((e) => e.id === id)
-    if (index === -1) return
-    this.entries.splice(index, 1)
-    this.save()
+    if (index !== -1) this.entries[index] = entry
+  }
+
+  async deleteEntry(id: string) {
+    await api.delete(`/entries/${id}`)
+    const index = this.entries.findIndex((e) => e.id === id)
+    if (index !== -1) this.entries.splice(index, 1)
   }
 
   clearProject(projectId: string) {
-    const now = Date.now()
     for (const entry of this.entries) {
       if (entry.project === projectId) {
         entry.project = null
-        entry.timemodified = now
       }
     }
-    this.save()
   }
 }
 

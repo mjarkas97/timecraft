@@ -5,6 +5,7 @@
 
   let now = $state(Date.now())
   let selectedProject = $state('')
+  let pending = $state(false)
 
   $effect(() => {
     if (!entriesStore.active) return
@@ -15,11 +16,20 @@
   const elapsedMs = $derived(entriesStore.active ? now - entriesStore.active.start : 0)
   const activeProject = $derived(projectsStore.get(entriesStore.active?.project ?? null))
 
-  function toggle() {
-    if (entriesStore.active) {
-      entriesStore.clockOut()
-    } else {
-      entriesStore.clockIn(selectedProject || null)
+  async function toggle() {
+    if (pending) return
+    pending = true
+    try {
+      if (entriesStore.active) {
+        await entriesStore.clockOut()
+      } else {
+        await entriesStore.clockIn(selectedProject || null)
+      }
+    } catch (err) {
+      console.error(err)
+      alert((err as Error).message)
+    } finally {
+      pending = false
     }
   }
 </script>
@@ -33,7 +43,7 @@
   </select>
 {/if}
 
-<button class="clock-button" class:active={!!entriesStore.active} onclick={toggle}>
+<button class="clock-button" class:active={!!entriesStore.active} disabled={pending} onclick={toggle}>
   {#if entriesStore.active}
     <span class="label">Clock Out</span>
     <span class="elapsed">{formatClock(elapsedMs)}</span>
