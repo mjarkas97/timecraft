@@ -10,7 +10,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json && tsc -p server/tsconfig.json",
-    "test": "tsx --test server/db.test.ts"
+    "test": "tsx --test server/db.test.ts server/routes/projects.test.ts server/routes/entries.test.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.1",
